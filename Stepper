@@ -1,0 +1,40 @@
+#include <AccelStepper.h>
+const int stepsPerRevolution = 200;
+const int maxSpeed = 1000;
+const int acceleration = 1000;
+const int deceleration = 1000;
+AccelStepper stepper(stepsPerRevolution, 8, 9, 10, 11);
+int currentPosition = 0;
+int targetPosition = 0;
+float sensorValue = 0;
+float sensorOffset = 0;
+float sensorScale = 1;
+void setup() {
+ stepper.setMaxSpeed(maxSpeed);
+ stepper.setAcceleration(acceleration);
+ stepper.setDeceleration(deceleration);
+ pinMode(A0, INPUT);
+}
+void loop() {
+ sensorValue = analogRead(A0);
+ float position = (sensorValue - sensorOffset) * sensorScale;
+ float distance = targetPosition - currentPosition;
+ float speed = maxSpeed;
+ if (abs(distance) < stepsPerRevolution) {
+ speed = sqrt(2 * abs(distance) * acceleration);
+ }
+ stepper.setSpeed(speed * distance / abs(distance));
+ stepper.runSpeed();
+ currentPosition = position;
+ stepper.setCurrentPosition(position);
+}
+void calibrateSensor() {
+ int samples = 1000;
+ float sum = 0;
+ for (int i = 0; i < samples; i++) {
+ sum += analogRead(A0);
+ delay(1);
+ }
+ sensorOffset = sum / samples;
+ sensorScale = stepsPerRevolution / (analogRead(A0) - sensorOffset);
+}
